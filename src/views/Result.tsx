@@ -122,6 +122,7 @@ export function Result() {
   const [filter, setFilter] = useState<string>('all')
   const [sort, setSort] = useState<'ping' | 'score'>('ping')
   const [qrConfig, setQrConfig] = useState<ServerConfig | null>(null)
+  const [copiedAll, setCopiedAll] = useState(false)
 
   const filtered = useMemo(() => {
     const base: ServerConfig[] = result?.configs ?? []
@@ -143,12 +144,29 @@ export function Result() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-orange-50 sm:text-3xl">Ranked Configs</h1>
-        <button
-          onClick={() => startScan()}
-          className="rounded-lg border border-ember-500/50 px-4 py-2 text-sm font-semibold text-ember-300 transition-all hover:bg-ember-500/15"
-        >
-          ↻ Re-scan
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const text = filtered.map((c) => c.rawConfig).join('\n')
+              copyText(text)
+              setCopiedAll(true)
+              setTimeout(() => setCopiedAll(false), 1500)
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-all ${
+              copiedAll
+                ? 'border-emerald-400/60 bg-emerald-400/10 text-emerald-300'
+                : 'border-ember-500/50 text-ember-300 hover:bg-ember-500/15'
+            }`}
+          >
+            {copiedAll ? 'All copied ✓' : 'Copy All'}
+          </button>
+          <button
+            onClick={() => startScan()}
+            className="rounded-lg border border-ember-500/50 px-4 py-2 text-sm font-semibold text-ember-300 transition-all hover:bg-ember-500/15"
+          >
+            ↻ Re-scan
+          </button>
+        </div>
       </div>
 
       <p className="text-sm text-orange-200/60">

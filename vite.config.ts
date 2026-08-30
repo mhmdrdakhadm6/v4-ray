@@ -10,6 +10,7 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  base: "/v4ray/",
   server: {
     proxy: {
       '/api': {
