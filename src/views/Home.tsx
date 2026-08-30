@@ -18,8 +18,8 @@ export function Home() {
           </span>
         </h1>
         <p className="mx-auto mt-4 max-w-md text-sm text-orange-200/60">
-          One tap. Test from the backend, rank by ping &amp; success, and grab the fastest working
-          configs — copy, QR, or download.
+          One tap. Test ping from your own connection, rank by latency &amp; success, and grab the
+          fastest working configs — copy, QR, or download.
         </p>
       </div>
 

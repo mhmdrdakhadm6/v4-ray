@@ -1,16 +1,14 @@
-// Raw Source URL lists for config fetching.
-// Inputs are GitHub blob URLs, we convert them to raw.githubusercontent.com URLs.
-
-const BLOB_RE = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/
+// Source lists as raw.githubusercontent.com URLs (CORS-friendly).
+// Converted from the GitHub blob URLs in the PRD.
 
 function toRaw(blobUrl: string): string {
-  const m = BLOB_RE.exec(blobUrl)
+  const m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/.exec(blobUrl)
   if (!m) return blobUrl
   const [, owner, repo, branch, ...rest] = m
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${rest.join('/')}`
 }
 
-const SOURCES_BLOB: string[] = [
+const BLOB_SOURCES = [
   'https://github.com/barry-far/V2ray-Config/blob/main/Sub1.txt',
   'https://github.com/barry-far/V2ray-Config/blob/main/Sub10.txt',
   'https://github.com/barry-far/V2ray-Config/blob/main/Sub11.txt',
@@ -46,5 +44,22 @@ const SOURCES_BLOB: string[] = [
   'https://github.com/Epodonios/v2ray-configs/blob/main/Sub8.txt',
 ]
 
-export const SOURCES: string[] = SOURCES_BLOB.map(toRaw)
-export const SOURCE_COUNT = SOURCES.length
+export const SOURCE_URLS: string[] = BLOB_SOURCES.map(toRaw)
+
+export async function fetchAllSources(): Promise<string[]> {
+  const results = await Promise.all(
+    SOURCE_URLS.map(async (url) => {
+      try {
+        const ctrl = new AbortController()
+        const t = setTimeout(() => ctrl.abort(), 25000)
+        const res = await fetch(url, { signal: ctrl.signal })
+        clearTimeout(t)
+        if (!res.ok) return ''
+        return await res.text()
+      } catch {
+        return ''
+      }
+    }),
+  )
+  return results.filter(Boolean)
+}

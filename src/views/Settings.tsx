@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import type { Protocol } from '../../shared/types'
 import { useStore } from '../store'
 import { Chip, GlassCard } from '../ui'
 
-const ALL_PROTOCOLS: Protocol[] = ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2']
+const ALL_PROTOCOLS = ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2']
 
-function name(p: Protocol) {
+function name(p: string) {
   const map: Record<string, string> = {
     vless: 'VLESS',
     vmess: 'VMess',
@@ -30,9 +29,9 @@ export function Settings() {
     })
   }
 
-  const toggleProtocol = (p: Protocol) => {
+  const toggleProtocol = (p: string) => {
     const has = settings.protocols.includes(p)
-    let next: Protocol[]
+    let next: string[]
     if (has) {
       next = settings.protocols.filter((x) => x !== p)
       if (next.length === 0) next = [p]

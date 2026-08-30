@@ -1,52 +1,58 @@
 # v4ray — Smart Config Selector (Web MVP)
 
 یک ابزار وب برای **تست و رتبه‌بندی کانفیگ‌های VPN** (بدون اتصال). کاربر یک دکمه می‌زند →
-سیستم کانفیگ‌ها را تست می‌کند → لیست کانفیگ‌های سالم و کم‌پینگ، مرتب‌شده از بهترین به بدترین
-نمایش داده می‌شود → کاربر کانفیگ را کپی / QR / دانلود می‌کند.
+سیستم کانفیگ‌ها را تست می‌کند → لیست کانفیگ‌های سالم و کم‌پینگ نمایش داده می‌شود → کاربر
+کانفیگ را کپی / QR / دانلود می‌کند.
 
-دقیقاً طبق اصل محصول: «یک دکمه بزن → لیست بهترین کانفیگ‌های سالم و کم‌پینگ رو بگیر». هیچ
-اتصالی از مرورگر برقرار نمی‌شود.
+> اصل محصول: «یک دکمه بزن → لیست بهترین کانفیگ‌های سالم و کم‌پینگ رو بگیر». هیچ اتصالی از
+> مرورگر برقرار نمی‌شود.
 
-## معماری
+## تست از اینترنت خودِ کاربر (Client-Side)
+
+این نسخه **بدون بک‌اند** اجرا می‌شود و روی **GitHub Pages** (فقط استاتیک) کار می‌کند.
+پینگ از **خط اینترنت خودِ کاربر** اندازه‌گیری می‌شود، نه از یک سرور وسط:
 
 ```
-Frontend (React + TS + Zustand + Tailwind + qrcode.react)
-   │  REST (/api/scan) + WebSocket (/ws) — پیشرفت زنده
+مرورگر کاربر ──fetch──▶ سورس‌ها (raw.githubusercontent) → Parse → Dedup
+   │
+   └──fetch (no-cors)──▶ سرورِ کانفیگ (host:port) → RTT با performance.now()
+   │
    ▼
-Backend  (Node.js + Express + ws)
-   Fetch Sources → Parse → Dedup → Validate → Test → Score → Rank
-   ▼
-تست: اتصال TCP واقعی + سنجش Latency (Xray core در صورت حضور، وگرنه TCP fallback)
+Score = Latency×70% + Success×30%  →  رتبه‌بندی بر اساس کمترین پینگ → Top N
 ```
 
-- تست همیشه سمت **Backend** انجام می‌شود (مرورگر به socket خام دسترسی ندارد).
-- Xray Core در صورت موجود بودن به‌عنوان موتور تست استفاده می‌شود؛ در غیاب آن، تست با
-  اتصال TCP واقعی و اندازه‌گیری RTT انجام می‌شود.
-- **Scoring**: `Latency × 70% + Success × 30%`
-- پروتکل‌ها: VLESS, VMess, Trojan, Shadowsocks, Hysteria2
+**محدودیت صادقانه:** مرورگر نمی‌تواند به پروتکل‌های VLESS/Trojan/VMess وصل شود (نداشتن raw
+socket). اما می‌تواند یک اتصال TCP/HTTP به همان `host:port` باز کند؛ بنابراین از اینترنت
+کاربر اندازه می‌گیرد که «سرور همان پورت در دسترس است و پینگش چقدر است». این نزدیک‌ترین چیزی
+است که یک صفحهٔ استاتیک به اندازه‌گیری latency واقعیِ هر کاربر می‌تواند برسد.
 
-## اجرا
+## پروتکل‌ها
+
+VLESS, VMess, Trojan, Shadowsocks, Hysteria2
+
+## اجرای محلی
 
 ```bash
 npm install
-
-# development (backend روی 8787 + frontend روی 5173، با proxy)
-npm run dev
-
-# production build
-npm run build
-
-# فقط backend
-npm start
+npm run dev        # فقط فرانت (Vite روی 5173)
 ```
 
-پس از `npm run dev` مرورگر را در `http://localhost:5173` باز کنید.
+## ساخت و انتشار روی GitHub Pages
+
+```bash
+npm run build      # خروجی در dist/
+npm run deploy     # gh-pages -d dist
+```
+
+- پایگاه مسیر در `vite.config.ts` روی `/v4ray/` تنظیم شده؛ اگر نام رپوی شما متفاوت است آن را
+  تغییر دهید.
+- نیازی به بک‌اند نیست؛ کل تست سمت مرورگر انجام می‌شود، پس `/api` و `/ws` وجود ندارند.
 
 ## صفحات
 
 1. **Home** — دکمه «Find Best Configs» + خلاصه آخرین اسکن
-2. **Testing** — پیشرفت زنده از طریق WebSocket
-3. **Result** — لیست رتبه‌بندی‌شده (Top N) با Copy / QR / Download + فیلتر Protocol و سورت
+2. **Testing** — پیشرفت زنده از مرورگر
+3. **Result** — لیست رتبه‌بندی‌شده (Top 5 کم‌پینگ) با Copy / Copy All / QR / Download + فیلتر Protocol و سورت
 4. **Settings** — Timeout، تعداد کانفیگ، Top N، فیلتر Protocol
 
-سورس‌ها: `server/sources.ts` (URL های خام GitHub).
+سورس‌ها: `src/client/sources.ts`.

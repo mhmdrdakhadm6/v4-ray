@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
-import type { ServerConfig } from '../../shared/types'
+import type { RankedConfig } from '../client/rank'
 import { useStore } from '../store'
 import { Chip, GlassCard } from '../ui'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
-const PROTOCOLS: ServerConfig['protocol'][] = ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2']
+const PROTOCOLS = ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2'] as const
 
-function protocolName(p: ServerConfig['protocol']) {
+function protocolName(p: string) {
   const map: Record<string, string> = {
     vless: 'VLESS',
     vmess: 'VMess',
@@ -52,9 +52,9 @@ function ConfigCard({
   rank,
   onShowQr,
 }: {
-  config: ServerConfig
+  config: RankedConfig
   rank: number
-  onShowQr: (c: ServerConfig) => void
+  onShowQr: (c: RankedConfig) => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -121,11 +121,11 @@ export function Result() {
   const { result, startScan } = useStore()
   const [filter, setFilter] = useState<string>('all')
   const [sort, setSort] = useState<'ping' | 'score'>('ping')
-  const [qrConfig, setQrConfig] = useState<ServerConfig | null>(null)
+  const [qrConfig, setQrConfig] = useState<RankedConfig | null>(null)
   const [copiedAll, setCopiedAll] = useState(false)
 
   const filtered = useMemo(() => {
-    const base: ServerConfig[] = result?.configs ?? []
+    const base: RankedConfig[] = result?.configs ?? []
     let list = filter === 'all' ? [...base] : base.filter((c) => c.protocol === filter)
     list = [...list].sort((a, b) => {
       if (sort === 'ping') {
