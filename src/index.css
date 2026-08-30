@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, "SF Mono", monospace;
+
+  --color-ink-950: #050302;
+  --color-ink-900: #0b0705;
+  --color-ink-850: #120c09;
+  --color-ink-800: #1a120e;
+  --color-ink-700: #2a1d16;
+
+  --color-ember-300: #ffb26b;
+  --color-ember-400: #ff8a3d;
+  --color-ember-500: #f97316;
+  --color-ember-600: #ea5b0c;
+
+  --color-flame-400: #ff4d3d;
+  --color-flame-500: #e3291f;
+  --color-flame-600: #b91c1c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #050302;
+  color: #f5ede6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a1d16 transparent;
+}

@@ -1,0 +1,81 @@
+import { useState } from 'react'
+import type { Protocol } from '../../shared/types'
+import { useStore } from '../store'
+import { Chip, GlassCard } from '../ui'
+
+const ALL_PROTOCOLS: Protocol[] = ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2']
+
+function name(p: Protocol) {
+  const map: Record<string, string> = {
+    vless: 'VLESS',
+    vmess: 'VMess',
+    trojan: 'Trojan',
+    shadowsocks: 'Shadowsocks',
+    hysteria2: 'Hysteria2',
+  }
+  return map[p] ?? p
+}
+
+export function Settings() {
+  const { settings, updateSettings } = useStore()
+  const [timeout, setTimeout] = useState(String(settings.timeoutMs))
+  const [maxConfigs, setMaxConfigs] = useState(String(settings.maxConfigs))
+  const [topN, setTopN] = useState(String(settings.topN))
+
+  const commit = () => {
+    updateSettings({
+      timeoutMs: Math.min(30000, Math.max(1000, Number(timeout) || 6000)),
+      maxConfigs: Math.min(500, Math.max(10, Number(maxConfigs) || 300)),
+      topN: Math.min(20, Math.max(1, Number(topN) || 5)),
+    })
+  }
+
+  const toggleProtocol = (p: Protocol) => {
+    const has = settings.protocols.includes(p)
+    let next: Protocol[]
+    if (has) {
+      next = settings.protocols.filter((x) => x !== p)
+      if (next.length === 0) next = [p]
+    } else {
+      next = [...settings.protocols, p]
+    }
+    updateSettings({ protocols: next })
+  }
+
+  const field =
+    'w-full rounded-lg border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm text-orange-50 outline-none focus:border-ember-500'
+
+  return (
+    <GlassCard className="w-full max-w-md mx-auto px-6 py-6">
+      <h1 className="text-xl font-bold text-orange-50">Settings</h1>
+
+      <div className="mt-5 space-y-5">
+        <label className="block">
+          <span className="mb-1 block text-xs uppercase tracking-wider text-orange-200/50">Timeout (ms)</span>
+          <input className={field} value={timeout} onChange={(e) => setTimeout(e.target.value)} onBlur={commit} />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs uppercase tracking-wider text-orange-200/50">Max configs to test</span>
+          <input className={field} value={maxConfigs} onChange={(e) => setMaxConfigs(e.target.value)} onBlur={commit} />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs uppercase tracking-wider text-orange-200/50">Top N results</span>
+          <input className={field} value={topN} onChange={(e) => setTopN(e.target.value)} onBlur={commit} />
+        </label>
+
+        <div>
+          <span className="mb-2 block text-xs uppercase tracking-wider text-orange-200/50">Protocols</span>
+          <div className="flex flex-wrap gap-1.5">
+            {ALL_PROTOCOLS.map((p) => (
+              <Chip key={p} active={settings.protocols.includes(p)} onClick={() => toggleProtocol(p)}>
+                {name(p)}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  )
+}
