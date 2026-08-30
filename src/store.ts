@@ -3,12 +3,52 @@ import type { ClientScanResult, ClientScanSettings, ProgressState } from './clie
 
 export type Phase = 'home' | 'testing' | 'result' | 'settings' | 'error'
 
+const STORAGE_KEY = 'v4ray-settings'
+
 const DEFAULT_SETTINGS: ClientScanSettings = {
   timeoutMs: 6000,
   maxConfigs: 300,
   topN: 5,
   protocols: ['vless', 'vmess', 'trojan', 'shadowsocks', 'hysteria2'],
 }
+
+// --- localStorage persistence -------------------------------------------
+
+function mergeSettings(saved: unknown): ClientScanSettings {
+  const base = { ...DEFAULT_SETTINGS }
+  if (!saved || typeof saved !== 'object') return base
+  const s = saved as Record<string, unknown>
+  const merged: ClientScanSettings = {
+    ...base,
+    ...(typeof s.timeoutMs === 'number' ? { timeoutMs: s.timeoutMs } : {}),
+    ...(typeof s.maxConfigs === 'number' ? { maxConfigs: s.maxConfigs } : {}),
+    ...(typeof s.topN === 'number' ? { topN: s.topN } : {}),
+    ...(Array.isArray(s.protocols)
+      ? { protocols: (s.protocols as unknown[]).filter((p): p is string => typeof p === 'string') }
+      : {}),
+  }
+  return merged
+}
+
+function loadSettings(): ClientScanSettings {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_SETTINGS }
+    return mergeSettings(JSON.parse(raw))
+  } catch {
+    return { ...DEFAULT_SETTINGS }
+  }
+}
+
+function saveSettings(settings: ClientScanSettings) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  } catch {
+    /* storage unavailable (private mode etc.) — ignore */
+  }
+}
+
+// --- state --------------------------------------------------------------
 
 interface AppState {
   phase: Phase
@@ -31,19 +71,22 @@ export const useStore = create<AppState>((set) => ({
   progress: { current: 0, total: 0 },
   result: null,
   error: null,
-  settings: { ...DEFAULT_SETTINGS },
+  settings: loadSettings(),
   scanning: false,
   lastWorking: 0,
   lastTested: 0,
 
   updateSettings: (patch) =>
-    set((s) => ({ settings: { ...s.settings, ...patch } })),
+    set((s) => {
+      const next: ClientScanSettings = { ...s.settings, ...patch }
+      saveSettings(next)
+      return { settings: next }
+    }),
 
   startScan: async () => {
     set({ phase: 'testing', progress: { current: 0, total: 0 }, result: null, error: null, scanning: true })
 
     try {
-      // lazy import so the parser/tester code only loads when needed
       const { runClientScan } = await import('./client/scan')
       const settings = useStore.getState().settings
       const result = await runClientScan(settings, (progress) => {

@@ -2,7 +2,7 @@ import type { RankedConfig } from './rank'
 import { dedupe, parseLines, type ParsedConfig } from './parser'
 import { toRanked, rankByPing } from './rank'
 import { fetchAllSources } from './sources'
-import { testLatency } from './tester'
+import { isPublicInternetHost, testLatency } from './tester'
 
 export interface ClientScanSettings {
   timeoutMs: number
@@ -59,11 +59,18 @@ export async function runClientScan(
   if (settings.protocols && settings.protocols.length) {
     list = list.filter((c) => settings.protocols.includes(c.protocol))
   }
+  // Drop non-public-internet hosts (loopback/private ranges) so they can't
+  // fake a super-low ping from the user's own machine.
+  list = list.filter((c) => isPublicInternetHost(c.server))
 
-  // 3) Cap at maxConfigs (even sampling)
+  // 3) Cap at maxConfigs (randomized sampling for fair coverage)
   if (list.length > settings.maxConfigs) {
-    const step = list.length / settings.maxConfigs
-    list = Array.from({ length: settings.maxConfigs }, (_, i) => list[Math.floor(i * step)])
+    const shuffled = [...list]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    list = shuffled.slice(0, settings.maxConfigs)
   }
 
   const total = list.length

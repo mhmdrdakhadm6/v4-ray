@@ -17,9 +17,10 @@ function name(p: string) {
 
 export function Settings() {
   const { settings, updateSettings } = useStore()
-  const [timeout, setTimeout] = useState(String(settings.timeoutMs))
+  const [timeout, setTimeoutVal] = useState(String(settings.timeoutMs))
   const [maxConfigs, setMaxConfigs] = useState(String(settings.maxConfigs))
   const [topN, setTopN] = useState(String(settings.topN))
+  const [saved, setSaved] = useState(false)
 
   const commit = () => {
     updateSettings({
@@ -27,6 +28,8 @@ export function Settings() {
       maxConfigs: Math.min(500, Math.max(10, Number(maxConfigs) || 300)),
       topN: Math.min(20, Math.max(1, Number(topN) || 5)),
     })
+    setSaved(true)
+    window.setTimeout(() => setSaved(false), 1500)
   }
 
   const toggleProtocol = (p: string) => {
@@ -39,6 +42,8 @@ export function Settings() {
       next = [...settings.protocols, p]
     }
     updateSettings({ protocols: next })
+    setSaved(true)
+    window.setTimeout(() => setSaved(false), 1500)
   }
 
   const field =
@@ -51,7 +56,7 @@ export function Settings() {
       <div className="mt-5 space-y-5">
         <label className="block">
           <span className="mb-1 block text-xs uppercase tracking-wider text-orange-200/50">Timeout (ms)</span>
-          <input className={field} value={timeout} onChange={(e) => setTimeout(e.target.value)} onBlur={commit} />
+          <input className={field} value={timeout} onChange={(e) => setTimeoutVal(e.target.value)} onBlur={commit} />
         </label>
 
         <label className="block">
@@ -74,6 +79,21 @@ export function Settings() {
             ))}
           </div>
         </div>
+
+        <button
+          onClick={commit}
+          className={`w-full rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+            saved
+              ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/50'
+              : 'text-black ring-1 ring-ember-500/60 hover:brightness-110'
+          }`}
+          style={{ background: saved ? undefined : 'linear-gradient(135deg,#ff8a3d,#f97316 45%,#e3291f)' }}
+        >
+          {saved ? 'Saved ✓' : 'Save settings'}
+        </button>
+        <p className="text-center text-xs text-orange-200/40">
+          Settings are stored on this device (localStorage).
+        </p>
       </div>
     </GlassCard>
   )
